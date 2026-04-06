@@ -1,0 +1,33 @@
+name: PR Documentation Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  review-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: PR Documentation Reviewer
+        id: review
+        uses: ron96g/pr-docs-reviewer@main
+        with:
+          google_api_key: ${{ secrets.GOOGLE_API_KEY }}
+          docs_path: "docs/docs/"
+          # auto_apply: "true"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Print results
+        run: |
+          echo "Status: ${{ steps.review.outputs.status }}"
+          echo "Suggestions: ${{ steps.review.outputs.suggestions }}"
+          echo "Doc PR URL: ${{ steps.review.outputs.doc_pr_url }}"
