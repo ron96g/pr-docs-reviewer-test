@@ -21,13 +21,19 @@ jobs:
         uses: ron96g/pr-docs-reviewer@main
         with:
           google_api_key: ${{ secrets.GOOGLE_API_KEY }}
+          model: "gemini-2.5-flash"
           docs_path: "docs/docs/"
-          # auto_apply: "true"
+          auto_apply: "true"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Print results
+        env:
+          STATUS: ${{ steps.review.outputs.status }}
+          SUGGESTIONS: ${{ steps.review.outputs.suggestions }}
+          DOC_PR_URL: ${{ steps.review.outputs.doc_pr_url }}
         run: |
-          echo "Status: ${{ steps.review.outputs.status }}"
-          echo "Suggestions: ${{ steps.review.outputs.suggestions }}"
-          echo "Doc PR URL: ${{ steps.review.outputs.doc_pr_url }}"
+          echo "Status: $STATUS"
+          echo "Doc PR URL: $DOC_PR_URL"
+          echo "Suggestions:"
+          echo "$SUGGESTIONS" | head -c 2000
