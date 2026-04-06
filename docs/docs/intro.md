@@ -11,6 +11,7 @@ sidebar_position: 1
 
 - Simple, intuitive API for GET and POST requests
 - Configurable request timeouts
+- Automatic retry logic with exponential backoff for connection errors
 - Response parsing utilities
 
 ## Quick Example
