@@ -80,4 +80,8 @@ Raised when a request exceeds the configured `timeout` duration.
 
 ### `ConnectionError`
 
-Raised when the client cannot establish a connection to the server.
+Raised when the client cannot establish a connection to the server. Note that `ConnectionError`s are now subject to the client's retry mechanism; if all retries are exhausted, a `RetryError` will be raised instead.
+
+### `RetryError`
+
+Raised when all retry attempts for a request have been exhausted due to underlying connection errors. This indicates that the client was unable to successfully complete the request after multiple retries.
