@@ -1,5 +1,6 @@
 """HTTP client for example-lib."""
 
+import time
 import urllib.request
 import json
 
@@ -11,6 +12,11 @@ class TimeoutError(Exception):
 
 class ConnectionError(Exception):
     """Raised when a connection cannot be established."""
+    pass
+
+
+class RetryError(Exception):
+    """Raised when all retry attempts have been exhausted."""
     pass
 
 
@@ -35,11 +41,64 @@ class Client:
     Args:
         base_url: The base URL for all API requests.
         timeout: Request timeout in seconds.
+        max_retries: Maximum number of retry attempts for failed requests.
+        backoff_factor: Multiplier for exponential backoff between retries.
     """
 
-    def __init__(self, base_url: str, timeout: int = 30):
+    def __init__(
+        self,
+        base_url: str,
+        timeout: int = 30,
+        max_retries: int = 3,
+        backoff_factor: float = 0.5,
+    ):
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
+        self.max_retries = max_retries
+        self.backoff_factor = backoff_factor
+
+    def _request(self, method: str, path: str, body: bytes | None = None, headers: dict | None = None) -> Response:
+        """Send an HTTP request with retry logic.
+
+        Retries on connection errors using exponential backoff. Timeout errors
+        are not retried.
+
+        Args:
+            method: The HTTP method (GET, POST, etc.).
+            path: The API endpoint path.
+            body: Optional request body bytes.
+            headers: Optional request headers.
+
+        Returns:
+            A Response object.
+
+        Raises:
+            TimeoutError: If the request times out.
+            RetryError: If all retry attempts are exhausted.
+        """
+        url = f"{self.base_url}{path}"
+        last_error = None
+
+        for attempt in range(self.max_retries):
+            try:
+                req = urllib.request.Request(url, data=body, method=method, headers=headers or {})
+                with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                    return Response(
+                        status_code=resp.status,
+                        body=resp.read(),
+                        headers=dict(resp.headers),
+                    )
+            except urllib.error.URLError as e:
+                if "timed out" in str(e):
+                    raise TimeoutError(f"Request to {url} timed out") from e
+                last_error = e
+                if attempt < self.max_retries - 1:
+                    sleep_time = self.backoff_factor * (2 ** attempt)
+                    time.sleep(sleep_time)
+
+        raise RetryError(
+            f"Request to {url} failed after {self.max_retries} attempts"
+        ) from last_error
 
     def get(self, path: str) -> Response:
         """Send a GET request.
@@ -50,19 +109,7 @@ class Client:
         Returns:
             A Response object.
         """
-        url = f"{self.base_url}{path}"
-        try:
-            req = urllib.request.Request(url, method="GET")
-            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-                return Response(
-                    status_code=resp.status,
-                    body=resp.read(),
-                    headers=dict(resp.headers),
-                )
-        except urllib.error.URLError as e:
-            if "timed out" in str(e):
-                raise TimeoutError(f"Request to {url} timed out") from e
-            raise ConnectionError(f"Could not connect to {url}") from e
+        return self._request("GET", path)
 
     def post(self, path: str, data: dict) -> Response:
         """Send a POST request with a JSON body.
@@ -74,22 +121,5 @@ class Client:
         Returns:
             A Response object.
         """
-        url = f"{self.base_url}{path}"
         body = json.dumps(data).encode("utf-8")
-        try:
-            req = urllib.request.Request(
-                url,
-                data=body,
-                method="POST",
-                headers={"Content-Type": "application/json"},
-            )
-            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-                return Response(
-                    status_code=resp.status,
-                    body=resp.read(),
-                    headers=dict(resp.headers),
-                )
-        except urllib.error.URLError as e:
-            if "timed out" in str(e):
-                raise TimeoutError(f"Request to {url} timed out") from e
-            raise ConnectionError(f"Could not connect to {url}") from e
+        return self._request("POST", path, body=body, headers={"Content-Type": "application/json"})
