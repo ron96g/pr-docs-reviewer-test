@@ -8,23 +8,25 @@ sidebar_position: 3
 
 The main class for interacting with HTTP APIs.
 
-### `Client(base_url, timeout=30)`
+### `Client(base_url, timeout=30, max_retries=3, backoff_factor=0.5)`
 
 Creates a new API client instance.
 
 **Parameters:**
 
-| Parameter  | Type  | Default | Description                                  |
-|------------|-------|---------|----------------------------------------------|
-| `base_url` | `str` | —       | The base URL for all API requests             |
-| `timeout`  | `int` | `30`    | Request timeout in seconds                    |
+| Parameter        | Type    | Default | Description                                            |
+|------------------|---------|---------|--------------------------------------------------------|
+| `base_url`       | `str`   | —       | The base URL for all API requests                      |
+| `timeout`        | `int`   | `30`    | Request timeout in seconds                             |
+| `max_retries`    | `int`   | `3`     | Maximum number of retry attempts for failed requests.  |
+| `backoff_factor` | `float` | `0.5`   | Multiplier for exponential backoff between retries.    |
 
 **Example:**
 
 ```python
 from example_lib import Client
 
-client = Client("https://api.example.com", timeout=60)
+client = Client("https://api.example.com", timeout=60, max_retries=5, backoff_factor=1.0)
 ```
 
 ---
