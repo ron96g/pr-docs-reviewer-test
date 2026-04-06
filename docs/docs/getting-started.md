@@ -26,7 +26,8 @@ The `Client` constructor accepts the following parameters:
 
 - **`base_url`** (`str`): The base URL for all API requests. Must include the scheme (`https://`).
 - **`timeout`** (`int`, default=`30`): Request timeout in seconds. Requests that exceed this duration will raise a `TimeoutError`.
-
+- **`max_retries`** (`int`, default=`3`): Maximum number of retry attempts for requests that encounter connection errors.
+- **`backoff_factor`** (`float`, default=`0.5`): Multiplier for exponential backoff between retry attempts. The sleep time before the Nth retry is `backoff_factor * (2 ** (N-1))` seconds.
 ## Basic Usage
 
 ### Making GET requests
