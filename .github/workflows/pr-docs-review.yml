@@ -21,7 +21,7 @@ jobs:
         uses: ron96g/pr-docs-reviewer@main
         with:
           google_api_key: ${{ secrets.GOOGLE_API_KEY }}
-          model: "gemini-2.0-flash"
+          model: "gemini-2.5-flash"
           docs_path: "docs/docs/"
           # auto_apply: "true"
         env:
